@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-type handle func(msg *Message) (response *Message)
+type handle func(c *Client, msg *Message) (response *Message)
 
 type Handles struct {
 	routes    map[string]handle
@@ -49,7 +49,7 @@ func (s *Handles) Do(c *Client, msg *Message) {
 		}
 		return
 	}
-	v := h(msg)
+	v := h(c, msg)
 	if v == nil {
 		return
 	}
