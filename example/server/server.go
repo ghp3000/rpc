@@ -8,6 +8,7 @@ import (
 	nbtls "github.com/ghp3000/nbio/extension/tls"
 	"github.com/ghp3000/nbio/logging"
 	"github.com/ghp3000/rpc"
+	"github.com/ghp3000/validator"
 	"github.com/lesismal/llib/std/crypto/tls"
 	"log"
 	"time"
@@ -19,12 +20,27 @@ type Session struct {
 }
 
 func main() {
+	validator.SetLanguage(validator.LangZh)
 	handler := rpc.NewHandles()
+	handler.Register("login", func(msg *rpc.Message) (response *rpc.Message) {
+		var v struct {
+			User     string `msgpack:"user" validate:"required,min=10,max=128"`
+			Password string `msgpack:"password" validate:"required,min=5,max=128"`
+		}
+		fmt.Println(msg.UnmarshalData(&v), v)
+		if err := validator.Struct(&v); err != nil {
+			fmt.Println(err.Error())
+		}
+		msg.SetData(map[string]interface{}{"Say": "ok"})
+		msg.SetError(rpc.ErrCodeStandard, "用户不存在")
+		time.Sleep(time.Millisecond * 1)
+		return msg
+	})
 	handler.Register("hello", func(msg *rpc.Message) (response *rpc.Message) {
 		var v string
 		fmt.Println(msg.UnmarshalData(&v), v)
 		msg.SetData(map[string]interface{}{"Say": "ok"})
-		msg.SetError("用户不存在")
+		msg.SetError(rpc.ErrCodeStandard, "用户不存在")
 		time.Sleep(time.Millisecond * 1)
 		return msg
 	})
@@ -75,7 +91,7 @@ func main() {
 			}
 			total := 4 + int(length)
 			if extra.Len() >= total {
-				fmt.Println(extra.Len(), extra.Bytes())
+				fmt.Println(extra.Len(), string(extra.Bytes()))
 				binary.Read(extra, binary.LittleEndian, &length)
 				buf := make([]byte, length)
 				binary.Read(extra, binary.LittleEndian, buf)

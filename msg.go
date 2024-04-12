@@ -22,12 +22,12 @@ var (
 )
 
 type Message struct {
-	Method   string          `json:"f" msgpack:"f"`                     //函数名
-	Sequence uint32          `json:"s" msgpack:"s"`                     //包序号
-	Code     uint8           `json:"c,omitempty" msgpack:"c,omitempty"` //状态码
-	Msg      string          `json:"m,omitempty" msgpack:"m,omitempty"` //状态文本
-	T        uint32          `json:"t,omitempty" msgpack:"t,omitempty"` //执行耗时
-	Data     json.RawMessage `json:"d,omitempty" msgpack:"d,omitempty"` //数据
+	Method   string          `json:"f" msgpack:"f" validate:"required,len>1"`                 //函数名
+	Sequence uint32          `json:"s" msgpack:"s" validate:"required"`                       //包序号
+	Code     uint8           `json:"c,omitempty" msgpack:"c,omitempty"  validate:"omitempty"` //状态码
+	Msg      string          `json:"m,omitempty" msgpack:"m,omitempty"  validate:"omitempty"` //状态文本
+	T        uint32          `json:"t,omitempty" msgpack:"t,omitempty"  validate:"omitempty"` //执行耗时
+	Data     json.RawMessage `json:"d,omitempty" msgpack:"d,omitempty"  validate:"omitempty"` //数据
 	codec    Codec           `msgpack:"-"`
 }
 
@@ -76,7 +76,12 @@ func (m *Message) Error() error {
 		}
 	}
 }
-func (m *Message) SetError(e string) {
-	m.Code = ErrCodeStandard
+func (m *Message) SetRawData(data []byte) *Message {
+	m.Data = data
+	return m
+}
+func (m *Message) SetError(code byte, e string) *Message {
 	m.Msg = e
+	m.Code = code
+	return m
 }

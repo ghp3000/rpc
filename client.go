@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/binary"
-	"fmt"
 	"net"
 	"sync"
 	"sync/atomic"
@@ -98,9 +97,6 @@ func (c *Client) loop() {
 			atomic.AddUint32(&c.reconnect, 1)
 			continue
 		}
-		if c.onConnect != nil {
-			c.onConnect(c)
-		}
 		c.recvLoop()
 		if c.onDisconnect != nil {
 			c.onDisconnect(c)
@@ -113,6 +109,10 @@ func (c *Client) recvLoop() {
 	c.online.Store(true)
 	defer c.online.Store(false)
 
+	if c.onConnect != nil {
+		go c.onConnect(c)
+	}
+
 	var length uint32
 	var err error
 	rd := bufio.NewReader(c.conn)
@@ -124,7 +124,6 @@ func (c *Client) recvLoop() {
 		if err = binary.Read(rd, binary.LittleEndian, buf); err != nil {
 			return
 		}
-		fmt.Println(buf)
 		msg, err := NewMsgPackFromBytes(buf, c.codec)
 		if err != nil {
 			continue
