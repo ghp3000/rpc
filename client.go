@@ -49,7 +49,6 @@ func NewClientWithDialer(dialer func() (net.Conn, error), reconnect bool, delay 
 			return 0
 		}
 	}(reconnect)}
-	go c.loop()
 	return c
 }
 
@@ -57,6 +56,9 @@ func NewClient(conn net.Conn, codec Codec) *Client {
 	c := &Client{conn: conn, codec: codec, online: atomic.Bool{}}
 	c.online.Store(true)
 	return c
+}
+func (c *Client) Run() {
+	go c.loop()
 }
 func (c *Client) Send(msg *Message) error {
 	if c.conn == nil {
