@@ -22,7 +22,7 @@ type Session struct {
 func main() {
 	validator.SetLanguage(validator.LangZh)
 	handler := rpc.NewHandles()
-	handler.Register("login", func(msg *rpc.Message) (response *rpc.Message) {
+	handler.Register("login", func(c *rpc.Client, msg *rpc.Message) (response *rpc.Message) {
 		var v struct {
 			User     string `msgpack:"user" validate:"required,min=10,max=128"`
 			Password string `msgpack:"password" validate:"required,min=5,max=128"`
@@ -36,7 +36,7 @@ func main() {
 		time.Sleep(time.Millisecond * 1)
 		return msg
 	})
-	handler.Register("hello", func(msg *rpc.Message) (response *rpc.Message) {
+	handler.Register("hello", func(c *rpc.Client, msg *rpc.Message) (response *rpc.Message) {
 		var v string
 		fmt.Println(msg.UnmarshalData(&v), v)
 		msg.SetData(map[string]interface{}{"Say": "ok"})

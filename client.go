@@ -49,7 +49,6 @@ func NewClientWithDialer(dialer func() (net.Conn, error), reconnect bool, delay 
 			return 0
 		}
 	}(reconnect)}
-	go c.loop()
 	return c
 }
 
@@ -57,6 +56,9 @@ func NewClient(conn net.Conn, codec Codec) *Client {
 	c := &Client{conn: conn, codec: codec, online: atomic.Bool{}}
 	c.online.Store(true)
 	return c
+}
+func (c *Client) Run() {
+	go c.loop()
 }
 func (c *Client) Send(msg *Message) error {
 	if c.conn == nil {
@@ -87,15 +89,17 @@ func (c *Client) loop() {
 	var err error
 	c.running = true
 	for c.running {
-		c.conn, err = c.dialer()
-		if err != nil {
-			if atomic.LoadUint32(&c.reconnect) == 0 {
-				c.Close()
-				return
+		if c.dialer != nil {
+			c.conn, err = c.dialer()
+			if err != nil {
+				if atomic.LoadUint32(&c.reconnect) == 0 {
+					c.Close()
+					return
+				}
+				time.Sleep(c.delay)
+				atomic.AddUint32(&c.reconnect, 1)
+				continue
 			}
-			time.Sleep(c.delay)
-			atomic.AddUint32(&c.reconnect, 1)
-			continue
 		}
 		c.recvLoop()
 		if c.onDisconnect != nil {

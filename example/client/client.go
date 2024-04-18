@@ -27,6 +27,7 @@ func main() {
 			fmt.Println(msg)
 		}
 	})
+	cli.Run()
 	fmt.Println(cli.Status())
 	time.Sleep(time.Second)
 	for i := 0; i < 10; i++ {
