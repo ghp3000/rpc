@@ -28,14 +28,18 @@ func main() {
 		}
 	})
 	cli.Run()
-	fmt.Println(cli.Status())
+	h := rpc.NewHandles()
+	h.Register("hello", func(c *rpc.Client, msg *rpc.Message) *rpc.Message {
+		return msg
+	})
+	cli.SetHandle(h)
 	time.Sleep(time.Second)
 	for i := 0; i < 10; i++ {
 		if msg, err := cli.Call("hello", "xxxxxxxx", time.Second); err != nil {
 			fmt.Println("call", err)
 		} else {
 			fmt.Println(msg.Error())
-			fmt.Println(msg, msg.Code, msg.T, msg.Msg)
+			fmt.Println(msg)
 		}
 		time.Sleep(time.Second)
 	}

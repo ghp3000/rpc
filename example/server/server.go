@@ -27,7 +27,8 @@ func main() {
 			User     string `msgpack:"user" validate:"required,min=10,max=128"`
 			Password string `msgpack:"password" validate:"required,min=5,max=128"`
 		}
-		fmt.Println(msg.UnmarshalData(&v), v)
+		msg.UnmarshalData(&v)
+		fmt.Println(v)
 		if err := validator.Struct(&v); err != nil {
 			fmt.Println(err.Error())
 		}
@@ -38,7 +39,8 @@ func main() {
 	})
 	handler.Register("hello", func(c *rpc.Client, msg *rpc.Message) (response *rpc.Message) {
 		var v string
-		fmt.Println(msg.UnmarshalData(&v), v)
+		msg.UnmarshalData(&v)
+		fmt.Println(v)
 		msg.SetData(map[string]interface{}{"Say": "ok"})
 		msg.SetError(rpc.ErrCodeStandard, "用户不存在")
 		time.Sleep(time.Millisecond * 1)
@@ -61,11 +63,17 @@ func main() {
 	isClient := false
 	g.OnOpen(nbtls.WrapOpen(tlsConfig, isClient, func(c *nbio.Conn, tlsConn *tls.Conn) {
 		client := rpc.NewClient(tlsConn, &rpc.MsgPackCodec{})
+		client.SetHandle(handler)
 		session := &Session{
 			Client: client,
 		}
 		c.SetExtra(session)
 		log.Println("OnOpen:", c.RemoteAddr().String())
+		go func() {
+			time.Sleep(time.Second * 5)
+			response, err2 := client.Call("hello", "hello", time.Second)
+			fmt.Println("call err", err2, response)
+		}()
 	}))
 	g.OnClose(nbtls.WrapClose(func(c *nbio.Conn, tlsConn *tls.Conn, err error) {
 		log.Println("OnClose:", c.RemoteAddr().String())
@@ -91,16 +99,15 @@ func main() {
 			}
 			total := 4 + int(length)
 			if extra.Len() >= total {
-				fmt.Println(extra.Len(), string(extra.Bytes()))
 				binary.Read(extra, binary.LittleEndian, &length)
 				buf := make([]byte, length)
 				binary.Read(extra, binary.LittleEndian, buf)
 				msg, err := rpc.NewMsgPackFromBytes(buf, &rpc.MsgPackCodec{})
 				if err != nil {
-					fmt.Println(err.Error())
+					fmt.Println("NewMsgPackFromBytes", err.Error())
 					return
 				}
-				handler.Do(extra.Client, msg)
+				extra.Do(msg)
 			}
 		}
 	}))

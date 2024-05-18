@@ -74,12 +74,14 @@ func (c *Client) Send(msg *Message) error {
 	if err = binary.Write(b, binary.LittleEndian, uint32(len(buf))); err != nil {
 		return err
 	}
-	if _, err = c.conn.Write(b.Bytes()); err != nil {
-		return err
-	}
+	b.Write(buf)
+	buf = b.Bytes()
 	if _, err = c.conn.Write(buf); err != nil {
 		return err
 	}
+	//if _, err = c.conn.Write(buf); err != nil {
+	//	return err
+	//}
 	return nil
 }
 func (c *Client) iter() (seq uint32) {
