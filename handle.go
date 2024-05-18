@@ -53,6 +53,7 @@ func (s *Handles) Do(c *Client, msg *Message) {
 	if v == nil {
 		return
 	}
+	v.Reply = true
 	v.T = uint32(time.Since(t).Milliseconds())
 	if err := c.Send(v); err != nil {
 		s.doErr(c, err)

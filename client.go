@@ -143,14 +143,16 @@ func (c *Client) Do(msg *Message) {
 		if r := recover(); r != nil {
 		}
 	}()
-	value, ok := c.wait.Load(msg.Sequence)
-	if ok {
-		ch, ok := value.(chan *Message)
-		if !ok {
+	if msg.Reply {
+		value, ok := c.wait.Load(msg.Sequence)
+		if ok {
+			ch, ok := value.(chan *Message)
+			if !ok {
+				return
+			}
+			ch <- msg
 			return
 		}
-		ch <- msg
-		return
 	}
 	if c.handle != nil {
 		c.handle.Do(c, msg)
@@ -163,6 +165,7 @@ func (c *Client) Call(method string, request interface{}, timeout time.Duration)
 	seq := c.iter()
 	msg := Message{
 		Method:   method,
+		Reply:    false,
 		Sequence: seq,
 		codec:    c.codec,
 	}
@@ -229,7 +232,7 @@ func (c *Client) Close() {
 	if c.conn != nil {
 		c.lock.Lock()
 		defer c.lock.Unlock()
-		c.conn.Close()
+		_ = c.conn.Close()
 	}
 	c.wait.Range(func(key, value any) bool {
 		c.wait.Delete(key)

@@ -22,7 +22,8 @@ var (
 )
 
 type Message struct {
-	Method   string          `json:"f" msgpack:"f" validate:"required,len>1"`                 //函数名
+	Method   string          `json:"f" msgpack:"f" validate:"required"`                       //函数名
+	Reply    bool            `json:"r" msgpack:"r" validate:"omitempty"`                      //是否是返回值
 	Sequence uint32          `json:"s" msgpack:"s" validate:"required"`                       //包序号
 	Code     uint8           `json:"c,omitempty" msgpack:"c,omitempty"  validate:"omitempty"` //状态码
 	Msg      string          `json:"m,omitempty" msgpack:"m,omitempty"  validate:"omitempty"` //状态文本
