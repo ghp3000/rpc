@@ -132,13 +132,13 @@ func (c *Client) recvLoop() {
 		if err != nil {
 			continue
 		}
-		go c.do(msg)
+		go c.Do(msg)
 	}
 }
 func (c *Client) Status() bool {
 	return c.online.Load()
 }
-func (c *Client) do(msg *Message) {
+func (c *Client) Do(msg *Message) {
 	defer func() {
 		if r := recover(); r != nil {
 		}
