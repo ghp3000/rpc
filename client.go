@@ -139,6 +139,10 @@ func (c *Client) Status() bool {
 	return c.online.Load()
 }
 func (c *Client) do(msg *Message) {
+	defer func() {
+		if r := recover(); r != nil {
+		}
+	}()
 	value, ok := c.wait.Load(msg.Sequence)
 	if ok {
 		ch, ok := value.(chan *Message)
