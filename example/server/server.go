@@ -20,7 +20,7 @@ type Session struct {
 }
 
 func main() {
-	validator.SetLanguage(validator.LangZh)
+	_ = validator.SetLanguage(validator.LangZh)
 	handler := rpc.NewHandles()
 	handler.Register("login", func(c *rpc.Client, msg *rpc.Message) (response *rpc.Message) {
 		var v struct {
@@ -62,7 +62,7 @@ func main() {
 
 	isClient := false
 	g.OnOpen(nbtls.WrapOpen(tlsConfig, isClient, func(c *nbio.Conn, tlsConn *tls.Conn) {
-		client := rpc.NewClient(tlsConn, &rpc.MsgPackCodec{})
+		client := rpc.NewClient(tlsConn)
 		client.SetHandle(handler)
 		session := &Session{
 			Client: client,

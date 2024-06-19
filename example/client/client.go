@@ -12,7 +12,7 @@ func dialer() (net.Conn, error) {
 	return tls.Dial("tcp4", "localhost:8888", &tls.Config{InsecureSkipVerify: true})
 }
 func main() {
-	cli := rpc.NewClientWithDialer(dialer, true, time.Second*3, &rpc.MsgPackCodec{})
+	cli := rpc.NewClientWithDialer(dialer, true, time.Second*3)
 	cli.OnConnect(func(c *rpc.Client) {
 		var v struct {
 			User     string `msgpack:"user" validate:"required"`

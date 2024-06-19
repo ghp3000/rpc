@@ -38,11 +38,10 @@ type Client struct {
 	handle       *Handles
 	onConnect    func(c *Client)
 	onDisconnect func(c *Client)
-	codec        Codec
 }
 
-func NewClientWithDialer(dialer func() (net.Conn, error), reconnect bool, delay time.Duration, codec Codec) *Client {
-	c := &Client{conn: nil, delay: delay, codec: codec, dialer: dialer, reconnect: func(r bool) uint32 {
+func NewClientWithDialer(dialer func() (net.Conn, error), reconnect bool, delay time.Duration) *Client {
+	c := &Client{conn: nil, delay: delay, dialer: dialer, reconnect: func(r bool) uint32 {
 		if r {
 			return 1
 		} else {
@@ -52,8 +51,8 @@ func NewClientWithDialer(dialer func() (net.Conn, error), reconnect bool, delay 
 	return c
 }
 
-func NewClient(conn net.Conn, codec Codec) *Client {
-	c := &Client{conn: conn, codec: codec, online: atomic.Bool{}}
+func NewClient(conn net.Conn) *Client {
+	c := &Client{conn: conn, online: atomic.Bool{}}
 	c.online.Store(true)
 	return c
 }
