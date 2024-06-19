@@ -75,6 +75,12 @@ func (m *Message) Marshal() ([]byte, error) {
 
 	return msgpack.Marshal(m)
 }
+func (m *Message) Data() []byte {
+	if m.codec == CodecTypeJson {
+		return m.DataJson
+	}
+	return m.DataMsgpack
+}
 func (m *Message) SetData(v interface{}) error {
 
 	if m.codec == CodecTypeJson {
