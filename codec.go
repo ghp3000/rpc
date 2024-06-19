@@ -6,6 +6,7 @@ import (
 )
 
 type Codec interface {
+	Name() string
 	Marshal(i interface{}) ([]byte, error)
 	Unmarshal(data []byte, i interface{}) error
 }
@@ -13,6 +14,9 @@ type Codec interface {
 type JsonCodec struct {
 }
 
+func (s *JsonCodec) Name() string {
+	return "json"
+}
 func (s *JsonCodec) Marshal(i interface{}) ([]byte, error) {
 	return json.Marshal(i)
 }
@@ -22,6 +26,9 @@ func (s *JsonCodec) Unmarshal(data []byte, i interface{}) error {
 
 type MsgPackCodec struct{}
 
+func (s MsgPackCodec) Name() string {
+	return "msgpack"
+}
 func (s MsgPackCodec) Marshal(i interface{}) ([]byte, error) {
 	return msgpack.Marshal(i)
 }

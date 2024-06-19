@@ -24,7 +24,7 @@ func main() {
 	handler := rpc.NewHandles()
 	handler.Register("login", func(c *rpc.Client, msg *rpc.Message) (response *rpc.Message) {
 		var v struct {
-			User     string `msgpack:"user" validate:"required,min=10,max=128"`
+			User     string `msgpack:"user" validate:"required,min=5,max=128"`
 			Password string `msgpack:"password" validate:"required,min=5,max=128"`
 		}
 		msg.UnmarshalData(&v)
@@ -102,9 +102,9 @@ func main() {
 				binary.Read(extra, binary.LittleEndian, &length)
 				buf := make([]byte, length)
 				binary.Read(extra, binary.LittleEndian, buf)
-				msg, err := rpc.NewMsgPackFromBytes(buf, &rpc.MsgPackCodec{})
+				msg, err := rpc.NewMessageFromBytes(buf)
 				if err != nil {
-					fmt.Println("NewMsgPackFromBytes", err.Error())
+					fmt.Println("NewMessageFromBytes", err.Error())
 					return
 				}
 				extra.Do(msg)

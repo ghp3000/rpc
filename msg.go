@@ -4,6 +4,14 @@ import (
 	"errors"
 	"fmt"
 	"github.com/goccy/go-json"
+	"github.com/vmihailenco/msgpack/v5"
+)
+
+type CodecType int8
+
+const (
+	CodecTypeMsgPack CodecType = 0
+	CodecTypeJson    CodecType = 1
 )
 
 const (
@@ -22,44 +30,74 @@ var (
 )
 
 type Message struct {
-	Method   string          `json:"f" msgpack:"f" validate:"required"`                       //函数名
-	Sequence uint32          `json:"s" msgpack:"s" validate:"required"`                       //包序号
-	Reply    bool            `json:"r,omitempty" msgpack:"r,omitempty" validate:"omitempty"`  //是否是返回值
-	Code     uint8           `json:"c,omitempty" msgpack:"c,omitempty"  validate:"omitempty"` //状态码
-	Msg      string          `json:"m,omitempty" msgpack:"m,omitempty"  validate:"omitempty"` //状态文本
-	T        uint32          `json:"t,omitempty" msgpack:"t,omitempty"  validate:"omitempty"` //执行耗时
-	Data     json.RawMessage `json:"d,omitempty" msgpack:"d,omitempty"  validate:"omitempty"` //数据
-	codec    Codec           `msgpack:"-"`
+	Method      string             `json:"f" msgpack:"f" validate:"required"`                       //函数名
+	Sequence    uint32             `json:"s" msgpack:"s" validate:"required"`                       //包序号
+	Reply       bool               `json:"r,omitempty" msgpack:"r,omitempty" validate:"omitempty"`  //是否是返回值
+	Code        uint8              `json:"c,omitempty" msgpack:"c,omitempty"  validate:"omitempty"` //状态码
+	Msg         string             `json:"m,omitempty" msgpack:"m,omitempty"  validate:"omitempty"` //状态文本
+	T           uint32             `json:"t,omitempty" msgpack:"t,omitempty"  validate:"omitempty"` //执行耗时
+	DataJson    json.RawMessage    `json:"d,omitempty" msgpack:"-"  validate:"omitempty"`           //数据
+	DataMsgpack msgpack.RawMessage `json:"-" msgpack:"d,omitempty"  validate:"omitempty"`           //数据
+	codec       CodecType          `msgpack:"-"`
 }
 
-func NewMsgPackFromBytes(buf []byte, codec Codec) (*Message, error) {
+// NewMessage typ=0 msgpack typ=1 json
+func NewMessage(typ CodecType) *Message {
+	return &Message{codec: typ}
+}
+func NewMessageFromBytes(buf []byte) (*Message, error) {
+	if len(buf) == 0 {
+		return nil, errors.New("empty data")
+	}
+	var typ CodecType
+	if buf[0] == 0x7b {
+		typ = CodecTypeJson
+	} else {
+		typ = CodecTypeMsgPack
+	}
+	var err error
 	var v Message
-	err := codec.Unmarshal(buf, &v)
+	if typ == CodecTypeJson {
+		err = json.Unmarshal(buf, &v)
+	} else if typ == CodecTypeMsgPack {
+		err = msgpack.Unmarshal(buf, &v)
+	}
 	if err != nil {
 		return nil, err
 	}
-	v.codec = codec
+	v.codec = typ
 	return &v, err
 }
 func (m *Message) Marshal() ([]byte, error) {
-	return m.getCodec().Marshal(m)
+	if m.codec == CodecTypeJson {
+		return json.Marshal(m)
+	}
+
+	return msgpack.Marshal(m)
 }
 func (m *Message) SetData(v interface{}) error {
-	buf, err := m.getCodec().Marshal(v)
-	if err != nil {
-		return err
+
+	if m.codec == CodecTypeJson {
+		buf, err := json.Marshal(v)
+		if err != nil {
+			return err
+		}
+		m.DataJson = buf
+	} else {
+		buf, err := msgpack.Marshal(v)
+		if err != nil {
+			return err
+		}
+		m.DataMsgpack = buf
 	}
-	m.Data = buf
 	return nil
 }
 func (m *Message) UnmarshalData(v interface{}) error {
-	return m.getCodec().Unmarshal(m.Data, v)
-}
-func (m *Message) getCodec() Codec {
-	if m.codec == nil {
-		return &MsgPackCodec{}
+	if m.codec == CodecTypeJson {
+		return json.Unmarshal(m.DataJson, v)
 	}
-	return m.codec
+
+	return msgpack.Unmarshal(m.DataMsgpack, v)
 }
 func (m *Message) Error() error {
 	switch m.Code {
@@ -78,11 +116,63 @@ func (m *Message) Error() error {
 	}
 }
 func (m *Message) SetRawData(data []byte) *Message {
-	m.Data = data
+	if m.codec == CodecTypeJson {
+		m.DataJson = data
+	} else {
+		m.DataMsgpack = data
+	}
 	return m
 }
 func (m *Message) SetError(code byte, e string) *Message {
 	m.Msg = e
 	m.Code = code
 	return m
+}
+func (m *Message) ToJson() ([]byte, error) {
+	if m.codec == CodecTypeJson {
+		return json.Marshal(m)
+	} else {
+		var vv interface{}
+		err := m.UnmarshalData(&vv)
+		if err != nil {
+			return nil, err
+		}
+		var v = make(map[string]interface{})
+		v["f"] = m.Method
+		v["s"] = m.Sequence
+		v["r"] = m.Reply
+		v["c"] = m.Code
+		v["m"] = m.Msg
+		v["t"] = m.T
+		v["d"] = vv
+		return json.Marshal(v)
+	}
+}
+func (m *Message) ToMsgpack() ([]byte, error) {
+	if m.codec == CodecTypeMsgPack {
+		return msgpack.Marshal(m)
+	} else {
+		var vv interface{}
+		err := m.UnmarshalData(&vv)
+		if err != nil {
+			return nil, err
+		}
+		var v = make(map[string]interface{})
+		v["f"] = m.Method
+		v["s"] = m.Sequence
+		v["r"] = m.Reply
+		v["c"] = m.Code
+		v["m"] = m.Msg
+		v["t"] = m.T
+		v["d"] = vv
+		return msgpack.Marshal(v)
+	}
+}
+func (m *Message) CodecName() string {
+	if m.codec == CodecTypeJson {
+		return "json"
+	} else if m.codec == CodecTypeMsgPack {
+		return "msgpack"
+	}
+	return "unknown codec"
 }

@@ -130,9 +130,9 @@ func (c *Client) recvLoop() {
 		if err = binary.Read(rd, binary.LittleEndian, buf); err != nil {
 			return
 		}
-		msg, err := NewMsgPackFromBytes(buf, c.codec)
+		msg, err := NewMessageFromBytes(buf)
 		if err != nil {
-			continue
+			return
 		}
 		go c.Do(msg)
 	}
@@ -153,8 +153,8 @@ func (c *Client) Do(msg *Message) {
 				return
 			}
 			ch <- msg
-			return
 		}
+		return
 	}
 	if c.handle != nil {
 		c.handle.Do(c, msg)
@@ -169,7 +169,6 @@ func (c *Client) Call(method string, request interface{}, timeout time.Duration)
 		Method:   method,
 		Reply:    false,
 		Sequence: seq,
-		codec:    c.codec,
 	}
 	if err := msg.SetData(request); err != nil {
 		return nil, err
