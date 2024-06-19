@@ -121,14 +121,18 @@ func (m *Message) Error() error {
 		}
 	}
 }
-func (m *Message) SetRawData(data []byte) *Message {
-	if m.codec == CodecTypeJson {
-		m.DataJson = data
-	} else {
-		m.DataMsgpack = data
+
+/*
+	func (m *Message) SetRawData(data []byte) *Message {
+		if m.codec == CodecTypeJson {
+			m.DataJson = data
+		} else {
+			m.DataMsgpack = data
+		}
+		return m
 	}
-	return m
-}
+*/
+
 func (m *Message) SetError(code byte, e string) *Message {
 	m.Msg = e
 	m.Code = code
