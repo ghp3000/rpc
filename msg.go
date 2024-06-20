@@ -75,11 +75,15 @@ func (m *Message) Marshal() ([]byte, error) {
 
 	return msgpack.Marshal(m)
 }
-func (m *Message) Data() []byte {
-	if m.codec == CodecTypeJson {
-		return m.DataJson
-	}
-	return m.DataMsgpack
+func (m *Message) BytesData() []byte {
+	var buf []byte
+	_ = m.UnmarshalData(&buf)
+	return buf
+}
+func (m *Message) StringData() string {
+	var str string
+	_ = m.UnmarshalData(&str)
+	return str
 }
 func (m *Message) SetData(v interface{}) error {
 	if m.codec == CodecTypeJson {
@@ -126,18 +130,6 @@ func (m *Message) Error() error {
 		}
 	}
 }
-
-/*
-	func (m *Message) SetRawData(data []byte) *Message {
-		if m.codec == CodecTypeJson {
-			m.DataJson = data
-		} else {
-			m.DataMsgpack = data
-		}
-		return m
-	}
-*/
-
 func (m *Message) SetError(code byte, e string) *Message {
 	m.Msg = e
 	m.Code = code
@@ -191,3 +183,14 @@ func (m *Message) CodecName() string {
 	}
 	return "unknown codec"
 }
+
+/*
+	func (m *Message) SetRawData(data []byte) *Message {
+		if m.codec == CodecTypeJson {
+			m.DataJson = data
+		} else {
+			m.DataMsgpack = data
+		}
+		return m
+	}
+*/
