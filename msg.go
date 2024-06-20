@@ -82,7 +82,6 @@ func (m *Message) Data() []byte {
 	return m.DataMsgpack
 }
 func (m *Message) SetData(v interface{}) error {
-
 	if m.codec == CodecTypeJson {
 		buf, err := json.Marshal(v)
 		if err != nil {
@@ -97,6 +96,12 @@ func (m *Message) SetData(v interface{}) error {
 		m.DataMsgpack = buf
 	}
 	return nil
+}
+
+// ShouldSetData 置入data数据,忽略错误并返回对象,方便链式调用
+func (m *Message) ShouldSetData(v interface{}) *Message {
+	_ = m.SetData(v)
+	return m
 }
 func (m *Message) UnmarshalData(v interface{}) error {
 	if m.codec == CodecTypeJson {
