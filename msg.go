@@ -75,6 +75,13 @@ func (m *Message) Marshal() ([]byte, error) {
 
 	return msgpack.Marshal(m)
 }
+func (m *Message) UnmarshalData(v interface{}) error {
+	if m.codec == CodecTypeJson {
+		return json.Unmarshal(m.DataJson, v)
+	}
+
+	return msgpack.Unmarshal(m.DataMsgpack, v)
+}
 func (m *Message) BytesData() []byte {
 	var buf []byte
 	_ = m.UnmarshalData(&buf)
@@ -106,13 +113,6 @@ func (m *Message) SetData(v interface{}) error {
 func (m *Message) ShouldSetData(v interface{}) *Message {
 	_ = m.SetData(v)
 	return m
-}
-func (m *Message) UnmarshalData(v interface{}) error {
-	if m.codec == CodecTypeJson {
-		return json.Unmarshal(m.DataJson, v)
-	}
-
-	return msgpack.Unmarshal(m.DataMsgpack, v)
 }
 func (m *Message) Error() error {
 	switch m.Code {
