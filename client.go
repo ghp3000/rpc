@@ -228,16 +228,20 @@ func (c *Client) Extra() interface{} {
 	return c.extra
 }
 func (c *Client) Close() {
+	defer func() {
+		if r := recover(); r != nil {
+		}
+	}()
 	c.running = false
+	c.wait.Range(func(key, value any) bool {
+		c.wait.Delete(key)
+		return true
+	})
 	if c.conn != nil {
 		c.lock.Lock()
 		defer c.lock.Unlock()
 		_ = c.conn.Close()
 	}
-	c.wait.Range(func(key, value any) bool {
-		c.wait.Delete(key)
-		return true
-	})
 }
 func (c *Client) SetHandle(h *Handles) {
 	c.handle = h
