@@ -256,5 +256,5 @@ func (c *Client) RemoteAddr() string {
 	if c.conn != nil {
 		return c.conn.RemoteAddr().String()
 	}
-	return ""
+	return "0.0.0.0:0"
 }
