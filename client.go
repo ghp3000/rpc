@@ -252,3 +252,9 @@ func (c *Client) OnConnect(f func(c *Client)) {
 func (c *Client) OnDisconnect(f func(c *Client)) {
 	c.onDisconnect = f
 }
+func (c *Client) RemoteAddr() string {
+	if c.conn != nil {
+		return c.conn.RemoteAddr().String()
+	}
+	return ""
+}
