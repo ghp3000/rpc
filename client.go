@@ -106,6 +106,7 @@ func (c *Client) loop() {
 		if c.onDisconnect != nil {
 			c.onDisconnect(c)
 		}
+		time.Sleep(c.delay)
 	}
 }
 
