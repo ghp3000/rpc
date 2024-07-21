@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"net"
 	"sync"
 	"sync/atomic"
@@ -38,6 +39,7 @@ type Client struct {
 	handle       *Handles
 	onConnect    func(c *Client)
 	onDisconnect func(c *Client)
+	onErr        func(err error)
 }
 
 func NewClientWithDialer(dialer func() (net.Conn, error), reconnect bool, delay time.Duration) *Client {
@@ -93,6 +95,9 @@ func (c *Client) loop() {
 		if c.dialer != nil {
 			c.conn, err = c.dialer()
 			if err != nil {
+				if c.onErr != nil {
+					c.onErr(fmt.Errorf("dial error: %v", err))
+				}
 				if atomic.LoadUint32(&c.reconnect) == 0 {
 					c.Close()
 					return
@@ -124,14 +129,23 @@ func (c *Client) recvLoop() {
 	rd := bufio.NewReader(c.conn)
 	for {
 		if err = binary.Read(rd, binary.LittleEndian, &length); err != nil {
+			if c.onErr != nil {
+				c.onErr(fmt.Errorf("read length error: %v", err))
+			}
 			return
 		}
 		buf := make([]byte, length)
 		if err = binary.Read(rd, binary.LittleEndian, buf); err != nil {
+			if c.onErr != nil {
+				c.onErr(fmt.Errorf("read data error: %v", err))
+			}
 			return
 		}
 		msg, err := NewMessageFromBytes(buf)
 		if err != nil {
+			if c.onErr != nil {
+				c.onErr(fmt.Errorf("parse data error: %v", err))
+			}
 			return
 		}
 		go c.Do(msg)
@@ -252,6 +266,9 @@ func (c *Client) OnConnect(f func(c *Client)) {
 }
 func (c *Client) OnDisconnect(f func(c *Client)) {
 	c.onDisconnect = f
+}
+func (c *Client) OnError(f func(err error)) {
+	c.onErr = f
 }
 func (c *Client) RemoteAddr() string {
 	if c.conn != nil {
